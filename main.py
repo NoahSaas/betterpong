@@ -3,9 +3,9 @@ import pygame, sys, random, time
 def reset_ball():
     global ball_speed_x, ball_speed_y
     ball.x = screen_width/2 - 10
-    ball.y = random.randint(10,100)
-    ball_speed_x = 4
-    ball_speed_y = 4
+    ball.y = screen_height/2
+    ball_speed_x = 0
+    ball_speed_y = 0
 
 
 def point_won(winner):
@@ -24,27 +24,36 @@ def animate_ball():
     ball.x += ball_speed_x
     ball.y += ball_speed_y
 
+    # Check collision with walls
     if ball.bottom >= screen_height or ball.top <= 0:
         ball_speed_y *= -1
 
-    if ball.right >= screen_width:
-        point_won("player1")
+    # Check collision with player1's dash racket
+    if player1.dashing:
+        if ball.colliderect(player1):
+            ball_speed_x *= -1.05
+            ball_speed_y += (ball.centery - player1.rect.centery) * 0.05  # Transfer momentum based on collision position
+            reset_ball()
+            return 
 
-    if ball.left <= 0:
-        point_won("player2")
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+    if player2.dashing:
+        if ball.colliderect(player2):
+            ball_speed_x *= -1.05
+            ball_speed_y += (ball.centery - player2.rect.centery) * 0.05  # Transfer momentum based on collision position
+            reset_ball()
+            return
+
     if ball.colliderect(player1):
         ball_speed_x *= -1.05
-        if player1.y_speed > 0:
-            ball_speed_y -= abs(player1.y_speed) * 0.1
-        elif player1.y_speed < 0:
-            ball_speed_y += abs(player1.y_speed) * 0.1
+        ball_speed_y += (ball.centery - player1.rect.centery) * 0.05  # Transfer momentum based on collision position
     if ball.colliderect(player2):
         ball_speed_x *= -1.05
-        if player2.y_speed > 0:
-            ball_speed_y -= abs(player2.y_speed) * 0.1
-        elif player2.y_speed < 0:
-            ball_speed_y += abs(player2.y_speed) * 0.1
+        ball_speed_y += (ball.centery - player2.rect.centery) * 0.05  # Transfer momentum based on collision position
+
+    if ball.right >= screen_width:
+        point_won("player1")
+    if ball.left <= 0:
+        point_won("player2")
 
 
 def animate_player1():
@@ -84,12 +93,19 @@ def animate_player2():
         player1.rect.left = 0
 
 
-def dash(plr):
-    if not plr.dashing and time.time() - plr.last_dash_time >= 1:
-        plr.speed_multiplier = 3
-        plr.dashing = True
-        plr.dash_start_time = time.time()
-        plr.last_dash_time = time.time()
+def dash(player):
+    if not player.dashing and time.time() - player.last_dash_time >= 1:
+        player.speed_multiplier = 2
+        player.dashing = True
+        player.dash_start_time = time.time()
+        player.last_dash_time = time.time()
+        player.dash_start_pos = player.rect.center  # Store the starting position of the dash
+
+
+def animate_dash_racket(player):
+    if player.dashing:
+        racket = Racket(player.dash_start_pos[0], player.dash_start_pos[1], 30, 100)
+        pygame.draw.rect(screen, 'pink', racket)  # Draw the dash rectangle
 
 
 def handle_movement(plr):
@@ -125,7 +141,7 @@ def handle_movement(plr):
         elif keys[pygame.K_RIGHT] and not keys[pygame.K_LEFT]:
             plr.x_speed = 5
 
-        if plr.dashing and time.time() - plr.dash_start_time >= 2:
+        if plr.dashing and time.time() - plr.dash_start_time >= 1.5:
             plr.speed_multiplier = 1
             plr.dashing = False 
 
@@ -140,6 +156,13 @@ class Player():
         self.dashing = False
         self.dash_start_time = 0  
         self.last_dash_time = 0
+        self.dash_start_pos = 0
+
+
+class Racket():
+    def __init__(self, x, y, width, height):
+        self.rect = pygame.Rect(x, y, width, height)
+
 
 
 pygame.init()
@@ -159,8 +182,8 @@ player1 = Player(150, screen_height/2, 20)
 player2 = Player(screen_width - 150, screen_height/2, 20)
 
 
-ball_speed_x = 4
-ball_speed_y = 4
+ball_speed_x = 0
+ball_speed_y = 0
 
 score_font = pygame.font.Font(None, 100)
 
@@ -177,6 +200,8 @@ while True:
     animate_ball()
     animate_player1()
     animate_player2()
+    animate_dash_racket(player1)
+    animate_dash_racket(player2)
         
     screen.fill('black')
 
