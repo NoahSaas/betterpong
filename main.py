@@ -69,7 +69,6 @@ def dash(player):
         length = math.sqrt(direction[0] ** 2 + direction[1] ** 2)
         direction = (direction[0] / length, direction[1] / length)
         
-        print("Direction:", direction)
         
         player.speed_multiplier = 2
         player.dashing = True
@@ -83,12 +82,10 @@ def animate_dash_racket(player):
     if player.dashing:
         dash_line_points = []
 
-        print("Dash direction:", player.dash_direction)
+        step_x = player.dash_direction[0] * 2.5
+        step_y = player.dash_direction[1] * 2.5
 
-        step_x = player.dash_direction[0]
-        step_y = player.dash_direction[1]
-
-        for i in range(100):
+        for i in range(50):
             dash_line_points.append((int(player.dash_start_pos[0] + step_x * i), int(player.dash_start_pos[1] + step_y * i)))
 
         for point in dash_line_points:
@@ -124,9 +121,8 @@ def handle_movement(plr):
 
         for racket in rackets:
             for point in racket:
-                if plr.rect.colliderect(pygame.Rect(point[0], point[1], 2, 2)):  # Adjust the collision rectangle based on your line representation
-                    print("Collision")
-            
+                if plr.rect.colliderect(pygame.Rect(point[0], point[1], 2, 2)):
+                    pass
 
     if plr == player2:
         if keys[pygame.K_UP] and not keys[pygame.K_DOWN]:
@@ -149,9 +145,9 @@ def handle_movement(plr):
 
         for racket in rackets:
             for point in racket:
-                if plr.rect.colliderect(pygame.Rect(point[0], point[1], 2, 2)):  # Adjust the collision rectangle based on your line representation
-                    print("Collision")
-
+                if plr.rect.colliderect(pygame.Rect(point[0], point[1], 2, 2)):  
+                    pass
+                
 
 class Player():
     def __init__(self, x, y, size):
