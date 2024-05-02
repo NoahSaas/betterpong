@@ -99,13 +99,41 @@ def dash(player):
         player.dashing = True
         player.dash_start_time = time.time()
         player.last_dash_time = time.time()
-        player.dash_start_pos = player.rect.center  # Store the starting position of the dash
+        player.dash_start_pos = player.rect.center 
 
 
 def animate_dash_racket(player):
     if player.dashing:
-        racket = Racket(player.dash_start_pos[0], player.dash_start_pos[1], 30, 100)
-        pygame.draw.rect(screen, 'pink', racket)  # Draw the dash rectangle
+        dash_dot_radius = 3  # Adjust the radius of the dash dots as needed
+        dash_dot_spacing = 8  # Adjust the spacing between dash dots as needed
+        
+        # Calculate the distance and direction of the dash
+        dash_distance = ((player.rect.centerx - player.dash_start_pos[0])**2 + (player.rect.centery - player.dash_start_pos[1])**2)**0.5
+        dash_direction = ((player.rect.centerx - player.dash_start_pos[0]) / dash_distance, (player.rect.centery - player.dash_start_pos[1]) / dash_distance)
+        
+        # Create an array of dots representing the dashed line
+        dash_dots = []
+        for i in range(int(dash_distance / dash_dot_spacing)):
+            dot_x = player.dash_start_pos[0] + dash_direction[0] * i * dash_dot_spacing
+            dot_y = player.dash_start_pos[1] + dash_direction[1] * i * dash_dot_spacing
+            dash_dots.append((dot_x, dot_y))
+        
+        # Append the dash dots to the respective player's list
+        if player == player1:
+            player1_dash_dots.extend(dash_dots)
+        else:
+            player2_dash_dots.extend(dash_dots)
+
+
+
+
+def animate_dash_line(dash_dots):
+    dash_dot_color = 'pink'  # Adjust the color of the dash dots as needed
+    dash_dot_radius = 3  # Adjust the radius of the dash dots as needed
+    
+    for dot in dash_dots:
+        pygame.draw.circle(screen, dash_dot_color, (int(dot[0]), int(dot[1])), dash_dot_radius)
+
 
 
 def handle_movement(plr):
@@ -180,7 +208,8 @@ ball.center = (screen_width/2, screen_height/2)
 
 player1 = Player(150, screen_height/2, 20)
 player2 = Player(screen_width - 150, screen_height/2, 20)
-
+player1_dash_dots = []
+player2_dash_dots = []
 
 ball_speed_x = 0
 ball_speed_y = 0
@@ -197,16 +226,21 @@ while True:
     
     handle_movement(player1)
     handle_movement(player2)
+
     animate_ball()
     animate_player1()
     animate_player2()
-    animate_dash_racket(player1)
-    animate_dash_racket(player2)
         
     screen.fill('black')
 
     plr1_score_surface = score_font.render(str(player1.points), True, "pink")
     plr2_score_surface = score_font.render(str(player2.points), True, "pink")
+
+    animate_dash_racket(player1)
+    animate_dash_racket(player2)
+    animate_dash_line(player1_dash_dots)
+    animate_dash_line(player2_dash_dots)
+
     screen.blit(plr1_score_surface,(screen_width/4,20))
     screen.blit(plr2_score_surface,(3*screen_width/4,20))
 
