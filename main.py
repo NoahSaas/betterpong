@@ -113,8 +113,7 @@ def randomevent(eo):
         x = random.randrange(int(screen_width/4), int((screen_width - (screen_width/4))))
         y = random.randrange(0, screen_height)
 
-        pw_up = Powerup(x, y, 32, event_ongoing)
-        powerups.append(pw_up)
+        powerups.append(Powerup(x, y, 32, event_ongoing))
         
 
 
