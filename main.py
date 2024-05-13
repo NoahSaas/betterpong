@@ -1,11 +1,15 @@
 import pygame, sys, random, time, math
 
+
+
 def reset_ball():
-    global ball_speed_x, ball_speed_y
+    global ball_speed_x, ball_speed_y, last_touch
     ball.x = screen_width/2 - 10
     ball.y = screen_height/2
-    ball_speed_x = 0
-    ball_speed_y = 0
+    ball_speed_x = 4 * random.choice([-1, 1])
+    ball_speed_y = 4 * random.choice([-1, 1])
+    last_touch = None
+
 
 
 def point_won(winner):
@@ -19,41 +23,36 @@ def point_won(winner):
     reset_ball()
 
 
+
 def animate_ball():
-    global ball_speed_x, ball_speed_y
+    global ball_speed_x, ball_speed_y, last_touch
     ball.x += ball_speed_x
     ball.y += ball_speed_y
 
-    # Check collision with walls
     if ball.bottom >= screen_height or ball.top <= 0:
         ball_speed_y *= -1
 
-    # Check collision with player1's dash racket
-    if player1.dashing:
-        if ball.colliderect(player1):
-            ball_speed_x *= -1.05
-            ball_speed_y += (ball.centery - player1.rect.centery) * 0.05  # Transfer momentum based on collision position
-            reset_ball()
-            return 
-
-    if player2.dashing:
-        if ball.colliderect(player2):
-            ball_speed_x *= -1.05
-            ball_speed_y += (ball.centery - player2.rect.centery) * 0.05  # Transfer momentum based on collision position
-            reset_ball()
-            return
-
     if ball.colliderect(player1):
         ball_speed_x *= -1.05
-        ball_speed_y += (ball.centery - player1.rect.centery) * 0.05  # Transfer momentum based on collision position
+        ball_speed_y += (ball.centery - player1.rect.centery) * 0.05 
+        ball.left = player1.rect.right
+        last_touch = player1
+
     if ball.colliderect(player2):
         ball_speed_x *= -1.05
-        ball_speed_y += (ball.centery - player2.rect.centery) * 0.05  # Transfer momentum based on collision position
+        ball_speed_y += (ball.centery - player2.rect.centery) * 0.05
+        ball.right = player2.rect.left 
+        last_touch = player2
 
     if ball.right >= screen_width:
         point_won("player1")
     if ball.left <= 0:
         point_won("player2")
+
+    if powerups and ball.colliderect(powerups[0]) and last_touch != None:
+        callevent(powerups[0].type, last_touch)
+        del powerups[0]
+
 
 
 def animate_player1():
@@ -73,6 +72,50 @@ def animate_player1():
 
     if player1.rect.left <= 0:
         player1.rect.left = 0
+    if player1.rect.right >= screen_width/4:
+        player1.rect.right = screen_width/4
+
+
+
+def animate_player2():
+    player2.rect.y += player2.y_speed * player2.speed_multiplier
+    player2.rect.x += player2.x_speed * player2.speed_multiplier
+    player2.x_speed = 0
+    player2.y_speed = 0
+
+    if player2.rect.top <= 0:
+        player2.rect.top = 0
+
+    if player2.rect.bottom >= screen_height:
+        player2.rect.bottom = screen_height
+
+    if player2.rect.right >= screen_width:
+        player2.rect.right = screen_width
+
+    if player2.rect.left <= (screen_width - (screen_width/4)):
+        player2.rect.left = (screen_width - (screen_width/4))
+    
+    
+    
+def callevent(selected_event, player):
+    if selected_event == "Large Paddle":
+        player.rect.inflate_ip(10, 100)
+        
+
+
+def randomevent(eo):
+    if random.random() <= 0.004 and eo == False:
+        global event_ongoing
+        powerup_list = ["Large Paddle", "Increase Speed", "Confusion", "Darkness", "Time Warp"]
+        selected_event = powerup_list[random.randint(0, len(powerup_list) - 1)]
+        event_ongoing = "Large Paddle"
+
+        x = random.randrange(int(screen_width/4), int((screen_width - (screen_width/4))))
+        y = random.randrange(0, screen_height)
+
+        pw_up = Powerup(x, y, 32, event_ongoing)
+        powerups.append(pw_up)
+        
 
 
 def draw(players, background):
@@ -98,25 +141,11 @@ def draw(players, background):
         pygame.draw.rect(screen,'green',players[1])
     else:
         pygame.draw.rect(screen,'pink',players[1])
-    
 
-def animate_player2():
-    player2.rect.y += player2.y_speed * player2.speed_multiplier
-    player2.rect.x += player2.x_speed * player2.speed_multiplier
-    player2.x_speed = 0
-    player2.y_speed = 0
+    for i in powerups:
+        if i:
+            pygame.draw.rect(screen, "red", i)
 
-    if player2.rect.top <= 0:
-        player2.rect.top = 0
-
-    if player2.rect.bottom >= screen_height:
-        player2.rect.bottom = screen_height
-
-    if player1.rect.right >= screen_width:
-        player1.rect.right = screen_width
-
-    if player1.rect.left <= 0:
-        player1.rect.left = 0
 
 
 def dash(player):
@@ -130,7 +159,8 @@ def dash(player):
         player.dash_start_pos = player.rect.center
 
 
-def handle_movement(plr, rackets):
+
+def handle_movement(plr):
     keys = pygame.key.get_pressed()
 
     if plr == player1:
@@ -180,6 +210,7 @@ def handle_movement(plr, rackets):
             plr.dashing = False  
 
 
+
 class Player():
     def __init__(self, x, y, width, height):
         self.rect = pygame.Rect(x, y, width, height)
@@ -195,6 +226,14 @@ class Player():
         self.dash_start_pos = 0
 
 
+
+class Powerup():
+    def __init__(self, x, y, size, type):
+        self.rect = pygame.Rect(x, y, size, size)
+        self.type = type
+
+
+
 pygame.init()
 
 screen_width = 900
@@ -208,14 +247,19 @@ clock = pygame.time.Clock()
 ball = pygame.Rect(0,0,30,30)
 ball.center = (screen_width/2, screen_height/2)
 
-player1 = Player(0, screen_height/2, 10, 150)
-player2 = Player(screen_width - 10, screen_height/2, 10, 150)
+player1 = Player(0, screen_height/2, 10, 75)
+player2 = Player(screen_width - 10, screen_height/2, 10, 75)
 
-ball_speed_x = 0
-ball_speed_y = 0
-rackets = []
+ball_speed_x = 4
+ball_speed_y = 4
+last_touch = None
+
+global event_ongoing
+event_ongoing = False
+powerups = []
 
 score_font = pygame.font.Font(None, 100)
+
 
 
 while True:
@@ -224,14 +268,15 @@ while True:
             pygame.quit()
             sys.exit()
     
-    
-    handle_movement(player1, rackets)
-    handle_movement(player2, rackets)
-
-    animate_ball()
+    handle_movement(player1)
+    handle_movement(player2)
     animate_player1()
     animate_player2()
-        
-    draw([player1, player2], "black", rackets)
+
+    animate_ball()
+    draw([player1, player2], "black")
+
+    randomevent(event_ongoing)
+
     pygame.display.update()
     clock.tick(60)

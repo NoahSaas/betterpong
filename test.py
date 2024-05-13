@@ -1,44 +1,194 @@
-import pygame
-import math
+import pygame, sys, random, time
+
+def reset_ball():
+    global ball_speed_x, ball_speed_y
+    ball.x = screen_width/2 - 10
+    ball.y = random.randint(10,100)
+    ball_speed_x = 4
+    ball_speed_y = 4
+
+
+def point_won(winner):
+    global player1_points, player2_points
+
+    if winner == "player1":
+        player1.points += 1
+    if winner == "player2":
+        player2.points += 1
+
+    reset_ball()
+
+
+def animate_ball():
+    global ball_speed_x, ball_speed_y
+    ball.x += ball_speed_x
+    ball.y += ball_speed_y
+
+    if ball.bottom >= screen_height or ball.top <= 0:
+        ball_speed_y *= -1
+
+    if ball.right >= screen_width:
+        point_won("player1")
+
+    if ball.left <= 0:
+        point_won("player2")
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+    if ball.colliderect(player1):
+        ball_speed_x *= -1.05
+        if player1.y_speed > 0:
+            ball_speed_y -= abs(player1.y_speed) * 0.1
+        elif player1.y_speed < 0:
+            ball_speed_y += abs(player1.y_speed) * 0.1
+    if ball.colliderect(player2):
+        ball_speed_x *= -1.05
+        if player2.y_speed > 0:
+            ball_speed_y -= abs(player2.y_speed) * 0.1
+        elif player2.y_speed < 0:
+            ball_speed_y += abs(player2.y_speed) * 0.1
+
+
+def animate_player1():
+    player1.rect.y += player1.y_speed * player1.speed_multiplier
+    player1.rect.x += player1.x_speed * player1.speed_multiplier
+    player1.x_speed = 0
+    player1.y_speed = 0
+
+    if player1.rect.top <= 0:
+        player1.rect.top = 0
+
+    if player1.rect.bottom >= screen_height:
+        player1.rect.bottom = screen_height
+
+    if player1.rect.right >= screen_width:
+        player1.rect.right = screen_width
+
+    if player1.rect.left <= 0:
+        player1.rect.left = 0
+
+def animate_player2():
+    player2.rect.y += player2.y_speed * player2.speed_multiplier
+    player2.rect.x += player2.x_speed * player2.speed_multiplier
+    player2.x_speed = 0
+    player2.y_speed = 0
+
+    if player2.rect.top <= 0:
+        player2.rect.top = 0
+
+    if player2.rect.bottom >= screen_height:
+        player2.rect.bottom = screen_height
+
+    if player1.rect.right >= screen_width:
+        player1.rect.right = screen_width
+
+    if player1.rect.left <= 0:
+        player1.rect.left = 0
+
+
+def dash(plr):
+    if not plr.dashing and time.time() - plr.last_dash_time >= 1:
+        plr.speed_multiplier = 3
+        plr.dashing = True
+        plr.dash_start_time = time.time()
+        plr.last_dash_time = time.time()
+
+
+def handle_movement(plr):
+    keys = pygame.key.get_pressed()
+
+    if plr == player1:
+        if keys[pygame.K_w] and not keys[pygame.K_s]:
+            plr.y_speed = -5
+        elif keys[pygame.K_s] and not keys[pygame.K_w]:
+            plr.y_speed = 5
+
+        if keys[pygame.K_a] and not keys[pygame.K_d]:
+            plr.x_speed = -5
+        elif keys[pygame.K_d] and not keys[pygame.K_a]:
+            plr.x_speed = 5
+
+        if keys[pygame.K_SPACE]:
+            dash(plr)
+
+        if plr.dashing and time.time() - plr.dash_start_time >= 0.15:
+            plr.speed_multiplier = 1
+            plr.dashing = False  
+
+
+    if plr == player2:
+        if keys[pygame.K_UP] and not keys[pygame.K_DOWN]:
+            plr.y_speed = -5
+        elif keys[pygame.K_DOWN] and not keys[pygame.K_UP]:
+            plr.y_speed = 5
+
+        if keys[pygame.K_LEFT] and not keys[pygame.K_RIGHT]:
+            plr.x_speed = -5
+        elif keys[pygame.K_RIGHT] and not keys[pygame.K_LEFT]:
+            plr.x_speed = 5
+
+        if plr.dashing and time.time() - plr.dash_start_time >= 2:
+            plr.speed_multiplier = 1
+            plr.dashing = False 
+
+
+class Player():
+    def __init__(self, x, y, size):
+        self.rect = pygame.Rect(x, y, size, size)
+        self.y_speed = 0
+        self.x_speed = 0
+        self.speed_multiplier = 1
+        self.points = 0
+        self.dashing = False
+        self.dash_start_time = 0  
+        self.last_dash_time = 0
+
 
 pygame.init()
 
-# Set up the screen
-screen_width = 800
-screen_height = 600
+screen_width = 900
+screen_height = 400
+
 screen = pygame.display.set_mode((screen_width, screen_height))
-pygame.display.set_caption("Rotated Rectangles")
+pygame.display.set_caption("ping pong")
+
 clock = pygame.time.Clock()
 
-# Colors
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
+ball = pygame.Rect(0,0,30,30)
+ball.center = (screen_width/2, screen_height/2)
 
-def draw_rotated_rectangle(surface, color, center, size, angle):
-    rotated_rect_surface = pygame.Surface(size, pygame.SRCALPHA)
-    pygame.draw.rect(rotated_rect_surface, color, (0, 0, *size))
-    rotated_surface = pygame.transform.rotate(rotated_rect_surface, angle)
-    rotated_rect = rotated_surface.get_rect(center=center)
-    surface.blit(rotated_surface, rotated_rect)
+player1 = Player(150, screen_height/2, 20)
+player2 = Player(screen_width - 150, screen_height/2, 20)
 
-# Main loop
-running = True
-while running:
+
+ball_speed_x = 4
+ball_speed_y = 4
+
+score_font = pygame.font.Font(None, 100)
+
+
+while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            running = False
+            pygame.quit()
+            sys.exit()
     
-    # Clear the screen
-    screen.fill(BLACK)
     
-    # Draw a rotated rectangle
-    rectangle_center = (screen_width // 2, screen_height // 2)
-    rectangle_size = (100, 50)  # Width, Height
-    angle_degrees = 10
-    draw_rotated_rectangle(screen, WHITE, rectangle_center, rectangle_size, angle_degrees)
-    
-    # Update the display
-    pygame.display.flip()
-    clock.tick(60)
+    handle_movement(player1)
+    handle_movement(player2)
+    animate_ball()
+    animate_player1()
+    animate_player2()
+        
+    screen.fill('black')
 
-pygame.quit()
+    plr1_score_surface = score_font.render(str(player1.points), True, "pink")
+    plr2_score_surface = score_font.render(str(player2.points), True, "pink")
+    screen.blit(plr1_score_surface,(screen_width/4,20))
+    screen.blit(plr2_score_surface,(3*screen_width/4,20))
+
+    pygame.draw.aaline(screen,'pink',(screen_width/2, 0), (screen_width/2, screen_height))
+    pygame.draw.ellipse(screen,'pink',ball)
+    pygame.draw.rect(screen,'pink',player1)
+    pygame.draw.rect(screen,'pink',player2)
+
+    pygame.display.update()
+    clock.tick(60)
