@@ -3,11 +3,11 @@ import pygame, sys, random, time, math
 
 
 def reset_ball():
-    global ball_speed_x, ball_speed_y, last_touch
+    global ball_speed_x, ball_speed_y, ball_vel, last_touch
     ball.x = screen_width/2 - 10
     ball.y = screen_height/2
-    ball_speed_x = 4 * random.choice([-1, 1])
-    ball_speed_y = 4 * random.choice([-1, 1])
+    ball_speed_x = ball_vel * random.choice([-1, 1])
+    ball_speed_y = ball_vel * random.choice([-1, 1])
     last_touch = None
 
 
@@ -31,17 +31,21 @@ def animate_ball():
 
     if ball.bottom >= screen_height or ball.top <= 0:
         ball_speed_y *= -1
+        if ball_speed_y < 0:
+            ball.y -= 5
+        elif ball_speed_y > 0:
+            ball.y += 5
 
     if ball.colliderect(player1):
         ball_speed_x *= -1.05
-        ball_speed_y += (ball.centery - player1.rect.centery) * 0.05 
-        ball.left = player1.rect.right
+        ball_speed_y += (ball.centery - player1.rect.centery) * 0.025 
+        ball.left = player1.rect.right + 5
         last_touch = player1
 
     if ball.colliderect(player2):
         ball_speed_x *= -1.05
-        ball_speed_y += (ball.centery - player2.rect.centery) * 0.05
-        ball.right = player2.rect.left 
+        ball_speed_y += (ball.centery - player2.rect.centery) * 0.025
+        ball.right = player2.rect.left - 5
         last_touch = player2
 
     if ball.right >= screen_width:
@@ -98,23 +102,89 @@ def animate_player2():
     
     
 def callevent(selected_event, player):
+    global ball_speed_x, ball_speed_y, ball_vel, timewarpeffect, event_ongoing
+
     if selected_event == "Large Paddle":
         player.rect.inflate_ip(10, 100)
+        player.pw_start_time = time.time()
+
+    if selected_event == "Shrink Paddle":
+        player.rect.inflate_ip(-5, -35)
+        player.pw_start_time = time.time()
+    
+    if selected_event == "Confusion":
+        player.confused = True
+        player.pw_start_time = time.time()
+
+    if selected_event == "Increase Speed":
+        ball_speed_x *= 1.5
+        event_ongoing = False
+
+    if selected_event == "Time Warp":
+        if player == player1:
+            temp_plr = player2
+        else:
+            temp_plr = player1
         
+        ball_speed_x *= timewarpeffect
+        ball_speed_y *= timewarpeffect
+        ball_vel *= timewarpeffect
+        temp_plr.vel *= timewarpeffect/2
+        temp_plr.dash_duration *= 1/timewarpeffect
+        player.pw_start_time = time.time()
+
 
 
 def randomevent(eo):
-    if random.random() <= 0.004 and eo == False:
+    if random.random() >= 0.004 and eo == False:
         global event_ongoing
-        powerup_list = ["Large Paddle", "Increase Speed", "Confusion", "Darkness", "Time Warp"]
+        powerup_list = ["Large Paddle", "Increase Speed", "Confusion", "Shrink Paddle", "Time Warp"]
         selected_event = powerup_list[random.randint(0, len(powerup_list) - 1)]
-        event_ongoing = "Large Paddle"
+        event_ongoing = selected_event
 
-        x = random.randrange(int(screen_width/4), int((screen_width - (screen_width/4))))
-        y = random.randrange(0, screen_height)
+        x = random.randrange(int(screen_width/4), int((screen_width - (screen_width/4))) - 32)
+        y = random.randrange(0, screen_height - 32)
 
         powerups.append(Powerup(x, y, 32, event_ongoing))
+
+
+
+def checkcds(player):
+    global event_ongoing, ball_speed_x, ball_speed_y, ball_vel, timewarpeffect
+
+    if player.dashing and time.time() - player.dash_start_time >= player.dash_duration:
+        player.speed_multiplier = 1
+        player.dashing = False
+
+    if event_ongoing == "Large Paddle" and time.time() - player.pw_start_time >= 10 and player.pw_start_time != 0:
+        player.rect.inflate_ip(-10, -100)
+        player.pw_start_time = 0
+        event_ongoing = False
+
+    if event_ongoing == "Shrink Paddle" and time.time() - player.pw_start_time >= 10 and player.pw_start_time != 0:
+        player.rect.inflate_ip(5, 35)
+        player.pw_start_time = 0
+        event_ongoing = False
+
+    if event_ongoing == "Confusion" and time.time() - player.pw_start_time >= 5 and player.pw_start_time != 0:
+        player.confused = False
+        player.pw_start_time = 0
+        event_ongoing = False
+
+    if event_ongoing == "Time Warp" and time.time() - player.pw_start_time >= 7.5 and player.pw_start_time != 0:
+        if player == player1:
+            temp_plr = player2
+        else:
+            temp_plr = player1
         
+        ball_speed_x /= timewarpeffect
+        ball_speed_y /= timewarpeffect
+        ball_vel /= timewarpeffect
+        temp_plr.vel /= timewarpeffect/2
+        temp_plr.dash_duration /= 1/timewarpeffect
+        player.pw_start_time = 0
+        event_ongoing = False
+
 
 
 def draw(players, background):
@@ -123,32 +193,31 @@ def draw(players, background):
     plr1_score_surface = score_font.render(str(players[0].points), True, "pink")
     plr2_score_surface = score_font.render(str(players[1].points), True, "pink")
 
+    screen.blit(plr1_score_surface, (screen_width / 2 - 135, 20))
+    screen.blit(plr2_score_surface, (screen_width / 2 + 100, 20))
 
-    screen.blit(plr1_score_surface,(screen_width/4,20))
-    screen.blit(plr2_score_surface,(3*screen_width/4,20))
-
-    pygame.draw.aaline(screen,'pink',(screen_width/2, 0), (screen_width/2, screen_height))
-    pygame.draw.aaline(screen,'blue',(screen_width/4, 0), (screen_width/4, screen_height))
-    pygame.draw.aaline(screen,'blue',(screen_width - (screen_width/4), 0), (screen_width - (screen_width/4), screen_height))
-    pygame.draw.ellipse(screen,'pink',ball)
+    pygame.draw.aaline(screen,'pink', (screen_width / 2, 0), (screen_width / 2, screen_height))
+    pygame.draw.aaline(screen,'blue', (screen_width / 4, 0), (screen_width / 4, screen_height))
+    pygame.draw.aaline(screen,'blue', (screen_width - (screen_width / 4), 0), (screen_width - (screen_width / 4), screen_height))
+    pygame.draw.ellipse(screen,'pink', ball)
 
     if players[0].dashing:
-        pygame.draw.rect(screen,'green',players[0])
+        pygame.draw.rect(screen,'green', players[0])
     else:
-        pygame.draw.rect(screen,'pink',players[0])
+        pygame.draw.rect(screen,'pink', players[0])
     if players[1].dashing:
-        pygame.draw.rect(screen,'green',players[1])
+        pygame.draw.rect(screen,'green', players[1])
     else:
-        pygame.draw.rect(screen,'pink',players[1])
+        pygame.draw.rect(screen,'pink', players[1])
 
     for i in powerups:
         if i:
-            pygame.draw.rect(screen, "red", i)
+             pygame.draw.rect(screen, (255, 255, 75), i)
 
 
 
 def dash(player):
-    if not player.dashing and time.time() - player.last_dash_time >= 1:
+    if not player.dashing and time.time() - player.last_dash_time >= 1.5:
         player.dash_speed_x = player.x_speed
         player.dash_speed_y = player.y_speed
         player.speed_multiplier = 2
@@ -159,54 +228,71 @@ def dash(player):
 
 
 
-def handle_movement(plr):
+def handle_movement(player):
     keys = pygame.key.get_pressed()
 
-    if plr == player1:
+    if player == player1:
         if keys[pygame.K_w] and not keys[pygame.K_s]:
-            plr.y_speed = -plr.vel
+            if not player.confused:
+                player.y_speed = -player.vel
+            else:
+                player.y_speed = player.vel
         elif keys[pygame.K_s] and not keys[pygame.K_w]:
-            plr.y_speed = plr.vel
-
+            if not player.confused:
+                player.y_speed = player.vel
+            else:
+                player.y_speed = -player.vel
         if keys[pygame.K_a] and not keys[pygame.K_d]:
-            plr.x_speed = -plr.vel
+            if not player.confused:
+                player.x_speed = -player.vel
+            else:
+                player.x_speed = player.vel
         elif keys[pygame.K_d] and not keys[pygame.K_a]:
-            plr.x_speed = plr.vel
+            if not player.confused:
+                player.x_speed = player.vel
+            else:
+                player.x_speed = -player.vel
 
-        if abs(plr.x_speed) + abs(plr.y_speed) >= plr.vel*2:
-            plr.x_speed = plr.x_speed/math.sqrt(2)
-            plr.y_speed = plr.y_speed/math.sqrt(2)
+        if abs(player.x_speed) + abs(player.y_speed) >= player.vel*2:
+            player.x_speed = player.x_speed/math.sqrt(2)
+            player.y_speed = player.y_speed/math.sqrt(2)
 
-        if keys[pygame.K_SPACE] and plr.dashing != True:
-            dash(plr)
+        if keys[pygame.K_SPACE] and player.dashing != True:
+            dash(player)
 
-        if plr.dashing and time.time() - plr.dash_start_time >= 0.25:
-            plr.speed_multiplier = 1
-            plr.dashing = False  
+        checkcds(player)
 
 
-
-    if plr == player2:
+    if player == player2:
         if keys[pygame.K_UP] and not keys[pygame.K_DOWN]:
-            plr.y_speed = -plr.vel
+            if not player.confused:
+                player.y_speed = -player.vel
+            else:
+                player.y_speed = player.vel
         elif keys[pygame.K_DOWN] and not keys[pygame.K_UP]:
-            plr.y_speed = plr.vel
-
+            if not player.confused:
+                player.y_speed = player.vel
+            else:
+                player.y_speed = -player.vel
         if keys[pygame.K_LEFT] and not keys[pygame.K_RIGHT]:
-            plr.x_speed = -plr.vel
+            if not player.confused:
+                player.x_speed = -player.vel
+            else:
+                player.x_speed = player.vel
         elif keys[pygame.K_RIGHT] and not keys[pygame.K_LEFT]:
-            plr.x_speed = plr.vel
+            if not player.confused:
+                player.x_speed = player.vel
+            else:
+                player.x_speed = -player.vel
 
-        if abs(plr.x_speed) + abs(plr.y_speed) >= plr.vel*2:
-            plr.x_speed = plr.x_speed/math.sqrt(2)
-            plr.y_speed = plr.y_speed/math.sqrt(2)
+        if abs(player.x_speed) + abs(player.y_speed) >= player.vel*2:
+            player.x_speed = player.x_speed/math.sqrt(2)
+            player.y_speed = player.y_speed/math.sqrt(2)
 
-        if keys[pygame.K_m] and plr.dashing != True:
-            dash(plr)
+        if keys[pygame.K_m] and player.dashing != True:
+            dash(player)
 
-        if plr.dashing and time.time() - plr.dash_start_time >= 0.25:
-            plr.speed_multiplier = 1
-            plr.dashing = False  
+        checkcds(player)
 
 
 
@@ -219,10 +305,13 @@ class Player():
         self.speed_multiplier = 1
         self.points = 0
         self.dashing = False
+        self.dash_duration = 0.25
         self.last_direction = 0
         self.dash_start_time = 0  
         self.last_dash_time = 0
         self.dash_start_pos = 0
+        self.pw_start_time = 0
+        self.confused = False
 
 
 
@@ -249,13 +338,15 @@ ball.center = (screen_width/2, screen_height/2)
 player1 = Player(0, screen_height/2, 10, 75)
 player2 = Player(screen_width - 10, screen_height/2, 10, 75)
 
-ball_speed_x = 4
-ball_speed_y = 4
+ball_vel = 4
+ball_speed_x = ball_vel
+ball_speed_y = ball_vel
 last_touch = None
 
 global event_ongoing
 event_ongoing = False
 powerups = []
+timewarpeffect = 0.75
 
 score_font = pygame.font.Font(None, 100)
 
