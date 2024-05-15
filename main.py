@@ -1,7 +1,7 @@
 import pygame, sys, random, time, math
 
 
-
+# Resetting the ball and the state of the game everytime a point is scored
 def reset_ball():
     global ball_speed_x, ball_speed_y, ball_vel, last_touch
     ball.x = screen_width/2 - 10
@@ -11,7 +11,8 @@ def reset_ball():
     last_touch = None
 
 
-
+# Assigns a point to the winner that scores a goal
+#   winner - the object that won the point
 def point_won(winner):
     global player1_points, player2_points
 
@@ -23,7 +24,7 @@ def point_won(winner):
     reset_ball()
 
 
-
+# Function that animates the ball's movement etc, but also handles collisions and increases in speed. Also keeps the ball on the screen.
 def animate_ball():
     global ball_speed_x, ball_speed_y, last_touch
     ball.x += ball_speed_x
@@ -68,7 +69,7 @@ def animate_ball():
         del powerups[0]
 
 
-
+# Animates player1, keeps track of momentum and changes vectors accordingly. Also handles some collisions with borders.
 def animate_player1():
     player1.rect.y += player1.y_speed * player1.speed_multiplier
     player1.rect.x += player1.x_speed * player1.speed_multiplier
@@ -90,7 +91,7 @@ def animate_player1():
         player1.rect.right = screen_width/4
 
 
-
+# Animates player2, keeps track of momentum and changes vectors accordingly. Also handles some collisions with borders.
 def animate_player2():
     player2.rect.y += player2.y_speed * player2.speed_multiplier
     player2.rect.x += player2.x_speed * player2.speed_multiplier
@@ -110,7 +111,9 @@ def animate_player2():
         player2.rect.left = (screen_width - (screen_width/4))
     
     
-    
+# This func is responsible for making powerups' effect appear on the screen. Once the event is called it checks what powerup is currently selected and executes it.
+#   selected_event - global variable that is in a position between False and a string ID to determine what powerup the players shall recieve.
+#   player - the player in question that should be affected by the powerup.
 def callevent(selected_event, player):
     global ball_speed_x, ball_speed_y, ball_vel, timewarpeffect, event_ongoing
     if player == player1:
@@ -143,7 +146,8 @@ def callevent(selected_event, player):
         player.pw_start_time = time.time()
 
 
-
+# A function to randomly generate the powerups spawning on the screen. Also handles logic to ensure that several powerups dont spawn at the same time.
+#   eo - stands for event_ongoing (same as above)
 def randomevent(eo):
     if random.random() >= 0.004 and eo == False:
         global event_ongoing
@@ -157,7 +161,8 @@ def randomevent(eo):
         powerups.append(Powerup(x, y, 32, event_ongoing))
 
 
-
+# Used to check the individual cooldowns, such as for how long a powerup should last and when you get your dash back. Also reverses the effects of the powerups once the time is up.
+#   player - the player whoms cooldowns we are checking
 def checkcds(player):
     global event_ongoing, ball_speed_x, ball_speed_y, ball_vel, timewarpeffect
 
@@ -199,7 +204,9 @@ def checkcds(player):
         event_ongoing = False
 
 
-
+# Func is responsible for drawing everything on the screen each frame.
+#   players - the players that are supposed to be drawn.
+#   background - rbg value, background color
 def draw(players, background):
     screen.fill(background)
 
@@ -232,7 +239,8 @@ def draw(players, background):
              pygame.draw.rect(screen, (255, 255, 75), i)
 
 
-
+# Function that accelerates the player and increases the velocity for a slight moment.
+#   player - the player in questions that's being affected.
 def dash(player):
     if not player.dashing and time.time() - player.last_dash_time >= 1.5:
         player.dash_speed_x = player.x_speed
@@ -244,7 +252,8 @@ def dash(player):
         player.dash_start_pos = player.rect.center
 
 
-
+# A general function that has every codeline that affects movement gatherd. Aka the movement "brain". Controls thing such as movementkeys etc.
+#   player - the player that's being moved.
 def handle_movement(player):
     keys = pygame.key.get_pressed()
 
@@ -312,7 +321,7 @@ def handle_movement(player):
         checkcds(player)
 
 
-
+# Player class that stores variables and stats.
 class Player():
     def __init__(self, x, y, width, height):
         self.rect = pygame.Rect(x, y, width, height)
@@ -331,14 +340,14 @@ class Player():
         self.confused = False
 
 
-
+# Powerup class that stores variables and stats
 class Powerup():
     def __init__(self, x, y, size, type):
         self.rect = pygame.Rect(x, y, size, size)
         self.type = type
 
 
-
+# Initializing the game and creating some global variables
 pygame.init()
 
 screen_width = 900
@@ -369,12 +378,14 @@ score_font = pygame.font.Font(None, 100)
 small_font = pygame.font.Font(None, 45)
 
 
+# Main loop that runs the game.
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
     
+    # Calls the functions we created for animations and movement.
     handle_movement(player1)
     handle_movement(player2)
     animate_player1()
