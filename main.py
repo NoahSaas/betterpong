@@ -36,17 +36,28 @@ def animate_ball():
         elif ball_speed_y > 0:
             ball.y += 5
 
-    if ball.colliderect(player1):
-        ball_speed_x *= -1.05
+    if ball.colliderect(player1) and last_touch != player1:
+        if player1.dashing == True:
+            ball_speed_x *= -1.15
+        else:    
+            ball_speed_x *= -1.05
         ball_speed_y += (ball.centery - player1.rect.centery) * 0.025 
         ball.left = player1.rect.right + 5
         last_touch = player1
+    elif ball.colliderect(player1) and last_touch == player1:
+        ball.left = player1.rect.right + 3
 
-    if ball.colliderect(player2):
-        ball_speed_x *= -1.05
+    if ball.colliderect(player2) and last_touch != player2:
+        if player2.dashing == True:
+            ball_speed_x *= -1.15
+        else:    
+            ball_speed_x *= -1.05
         ball_speed_y += (ball.centery - player2.rect.centery) * 0.025
         ball.right = player2.rect.left - 5
         last_touch = player2
+    elif ball.colliderect(player2) and last_touch == player2:
+        print("CONTINOUS TOCUH")
+        ball.right = player2.rect.left - 3
 
     if ball.right >= screen_width:
         point_won("player1")
@@ -129,7 +140,7 @@ def callevent(selected_event, player):
         ball_speed_y *= timewarpeffect
         ball_vel *= timewarpeffect
         temp_plr.vel *= timewarpeffect/2
-        temp_plr.dash_duration *= 1/timewarpeffect
+        temp_plr.dash_duration *= 2/timewarpeffect
         player.pw_start_time = time.time()
 
 
