@@ -112,17 +112,17 @@ def callevent(selected_event, player):
         player.rect.inflate_ip(10, 100)
         player.pw_start_time = time.time()
 
-    if selected_event == "Shrink Paddle":
+    if selected_event == "Small Paddle":
         temp_plr.rect.inflate_ip(-5, -35)
         temp_plr.pw_start_time = time.time()
     
-    if selected_event == "Confusion":
+    if selected_event == "Reversed Controls":
         temp_plr.confused = True
         temp_plr.pw_start_time = time.time()
 
-    if selected_event == "Increase Speed":
+    if selected_event == "Increased Speed":
         ball_speed_x *= 1.5
-        event_ongoing = False
+        temp_plr.pw_start_time = time.time()
 
     if selected_event == "Time Warp":
         ball_speed_x *= timewarpeffect
@@ -137,7 +137,7 @@ def callevent(selected_event, player):
 def randomevent(eo):
     if random.random() >= 0.004 and eo == False:
         global event_ongoing
-        powerup_list = ["Large Paddle", "Increase Speed", "Confusion", "Shrink Paddle", "Time Warp"]
+        powerup_list = ["Large Paddle", "Increased Speed", "Reversed Controls", "Small Paddle", "Time Warp"]
         selected_event = powerup_list[random.randint(0, len(powerup_list) - 1)]
         event_ongoing = selected_event
 
@@ -160,12 +160,16 @@ def checkcds(player):
         player.pw_start_time = 0
         event_ongoing = False
 
-    if event_ongoing == "Shrink Paddle" and time.time() - player.pw_start_time >= 10 and player.pw_start_time != 0:
+    if event_ongoing == "Small Paddle" and time.time() - player.pw_start_time >= 10 and player.pw_start_time != 0:
         player.rect.inflate_ip(5, 35)
         player.pw_start_time = 0
         event_ongoing = False
 
-    if event_ongoing == "Confusion" and time.time() - player.pw_start_time >= 5 and player.pw_start_time != 0:
+    if event_ongoing == "Increased Speed" and time.time() - player.pw_start_time >= 3 and player.pw_start_time != 0:
+        player.pw_start_time = 0
+        event_ongoing = False
+
+    if event_ongoing == "Reversed Controls" and time.time() - player.pw_start_time >= 5 and player.pw_start_time != 0:
         player.confused = False
         player.pw_start_time = 0
         event_ongoing = False
@@ -199,6 +203,10 @@ def draw(players, background):
     pygame.draw.aaline(screen,'blue', (screen_width / 4, 0), (screen_width / 4, screen_height))
     pygame.draw.aaline(screen,'blue', (screen_width - (screen_width / 4), 0), (screen_width - (screen_width / 4), screen_height))
     pygame.draw.ellipse(screen,'pink', ball)
+
+    if event_ongoing and not powerups:
+        pw_surface = small_font.render(str(event_ongoing), True, "pink")
+        screen.blit(pw_surface, (screen_width/2 - 100, screen_height - 40))
 
     if players[0].dashing:
         pygame.draw.rect(screen,'green', players[0])
@@ -263,22 +271,22 @@ def handle_movement(player):
 
 
     if player == player2:
-        if keys[pygame.K_UP] and not keys[pygame.K_DOWN]:
+        if keys[pygame.K_i] and not keys[pygame.K_k]:
             if not player.confused:
                 player.y_speed = -player.vel
             else:
                 player.y_speed = player.vel
-        elif keys[pygame.K_DOWN] and not keys[pygame.K_UP]:
+        elif keys[pygame.K_k] and not keys[pygame.K_i]:
             if not player.confused:
                 player.y_speed = player.vel
             else:
                 player.y_speed = -player.vel
-        if keys[pygame.K_LEFT] and not keys[pygame.K_RIGHT]:
+        if keys[pygame.K_j] and not keys[pygame.K_l]:
             if not player.confused:
                 player.x_speed = -player.vel
             else:
                 player.x_speed = player.vel
-        elif keys[pygame.K_RIGHT] and not keys[pygame.K_LEFT]:
+        elif keys[pygame.K_l] and not keys[pygame.K_j]:
             if not player.confused:
                 player.x_speed = player.vel
             else:
@@ -288,7 +296,7 @@ def handle_movement(player):
             player.x_speed = player.x_speed/math.sqrt(2)
             player.y_speed = player.y_speed/math.sqrt(2)
 
-        if keys[pygame.K_m] and player.dashing != True:
+        if keys[pygame.K_p] and player.dashing != True:
             dash(player)
 
         checkcds(player)
@@ -348,7 +356,7 @@ powerups = []
 timewarpeffect = 0.75
 
 score_font = pygame.font.Font(None, 100)
-
+small_font = pygame.font.Font(None, 45)
 
 
 while True:
