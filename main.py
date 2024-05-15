@@ -56,7 +56,6 @@ def animate_ball():
         ball.right = player2.rect.left - 5
         last_touch = player2
     elif ball.colliderect(player2) and last_touch == player2:
-        print("CONTINOUS TOCUH")
         ball.right = player2.rect.left - 3
 
     if ball.right >= screen_width:
