@@ -103,29 +103,28 @@ def animate_player2():
     
 def callevent(selected_event, player):
     global ball_speed_x, ball_speed_y, ball_vel, timewarpeffect, event_ongoing
+    if player == player1:
+        temp_plr = player2
+    else:
+        temp_plr = player1
 
     if selected_event == "Large Paddle":
         player.rect.inflate_ip(10, 100)
         player.pw_start_time = time.time()
 
     if selected_event == "Shrink Paddle":
-        player.rect.inflate_ip(-5, -35)
-        player.pw_start_time = time.time()
+        temp_plr.rect.inflate_ip(-5, -35)
+        temp_plr.pw_start_time = time.time()
     
     if selected_event == "Confusion":
-        player.confused = True
-        player.pw_start_time = time.time()
+        temp_plr.confused = True
+        temp_plr.pw_start_time = time.time()
 
     if selected_event == "Increase Speed":
         ball_speed_x *= 1.5
         event_ongoing = False
 
     if selected_event == "Time Warp":
-        if player == player1:
-            temp_plr = player2
-        else:
-            temp_plr = player1
-        
         ball_speed_x *= timewarpeffect
         ball_speed_y *= timewarpeffect
         ball_vel *= timewarpeffect
@@ -192,7 +191,7 @@ def draw(players, background):
 
     plr1_score_surface = score_font.render(str(players[0].points), True, "pink")
     plr2_score_surface = score_font.render(str(players[1].points), True, "pink")
-
+    
     screen.blit(plr1_score_surface, (screen_width / 2 - 135, 20))
     screen.blit(plr2_score_surface, (screen_width / 2 + 100, 20))
 
