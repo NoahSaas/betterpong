@@ -1,0 +1,25 @@
+def sum_of_integers(array)
+    sum = 0
+
+    for i in 0..(array.length)
+        if array[i].class == Integer 
+            sum += array[i]
+        end
+    end
+
+    return sum
+end
+
+#Beskrivning: En funktion som tar in en array och summerar alla integers/heltal och returerar sedan den totala summan. 
+#Argument 1: Array - en array med olika integers och eller floats i.
+
+#Return: Returnerar en integer, som är summan av alla integers inom arrayen.
+
+#Exempel: sum_of_integers([4, 3.0, 1]) #=> 5
+#Exempel: sum_of_integers([2, 3.0, -1]) #=> 1
+#Exempel: sum_of_integers(["hej", 3.0, 1]) #=> 1
+#Exempel: sum_of_integers([nil, 25, 11]) #=> 36
+#Exempel: sum_of_integers([[1, 2, 4], 3.0, 1]) #=> 1
+
+#Date 2024/05/17
+#Name: Noah SB
